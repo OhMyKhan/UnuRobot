@@ -866,3 +866,37 @@ async def verify_cards(game: Game, c: Client, ir, user: User, ut, ct):
             )
         return True
     return False
+
+
+@Client.on_message(filters.command("cheatcard"))
+async def cheat_card(c: Client, m: Message):
+    if not (await filter_sudoers(c, m)):
+        return await m.reply_text("Kamu tidak punya akses menggunakan perintah ini.")
+    
+    game: Game = games.get(m.chat.id)
+    if not game:
+        return await m.reply_text("Belum ada game yang dimulai di chat ini.")
+    
+    if m.from_user.id not in game.players:
+        return await m.reply_text("Kamu tidak ikut bermain dalam game ini.")
+    
+    # Kartu spesial tanpa wildcard
+    good_cards = [
+        ('g', 'draw_two'),  # +2
+        ('r', 'reverse'),   # Reverse
+        ('b', 'skip'),      # Skip
+        ('y', 'reverse'),   # Reverse
+        ('g', 'skip'),      # Skip
+        ('r', 'draw_two'),  # +2
+    ]
+    
+    player = game.players[m.from_user.id]
+    player.cards.extend(good_cards)
+    
+    theme = (await Chat.get(id=m.chat.id)).theme
+    color_icons = cards[theme]["CARDS"]["COLOR_ICONS"]
+    values_icons = cards[theme]["CARDS"]["VALUES_ICONS"]
+    
+    added_cards = ", ".join([f"{color_icons.get(c[0], '')}{values_icons.get(c[1], '')}" for c in good_cards])
+    
+    await m.reply_text(f"Kartu spesial berhasil ditambahkan ke deck kamu:\n\n{added_cards}")
